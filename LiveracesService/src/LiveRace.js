@@ -1,3 +1,6 @@
+const request = require('request');
+
+
 class LiveRace {
   constructor(liveRaceID, raceName, raceDescription, raceLength, organiserID, opponentIDs) {
     this.id = liveRaceID;
@@ -11,13 +14,33 @@ class LiveRace {
 
     // Populate the participants collection
     this.participantsIDs.forEach((participantID) => {
-      this.participants[participantID] = {
-        id: participantID,
-        name: '',
-        inLobby: false,
-        isReady: false,
-        ws: undefined
-      };
+      let participantName = '';
+
+      request('http://usersservice:5000/search/id/' + participantID, (error, response, body) => {
+        if (error) {
+          console.log('LiveRace.js | Request Error: participantID = ', participantID);
+          participantName = 'ID:' + participantID;
+        } else {
+          if (response && response.statusCode === 200) {
+            console.log('LiveRace.js | User Request OK (200): participantID = ', participantID);     
+                  
+            let participantProfile = JSON.parse(body);
+            participantName = participantProfile.fullname;
+          } else {
+            console.log('LiveRace.js | Request Error (' + response.statusCode + '): participantID = ', participantID);            
+            participantName = 'ID:' + participantID;
+          }
+
+          this.participants[participantID] = {
+            id: participantID,
+            name: participantName,
+            inLobby: false,
+            isReady: false,
+            ws: undefined
+          }; 
+        }
+      });
+
     });
 
     this.duration = undefined;
